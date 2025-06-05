@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Upload</title>
+  <link href="/css/video-js.css" rel="stylesheet">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .progress { margin-top: 10px; }
+    .video-container { margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h1>Upload Video</h1>
+  <form id="uploadForm" enctype="multipart/form-data">
+    <label>Course: <input type="text" name="course" id="course" required></label><br>
+    <label>Lesson: <input type="text" name="lesson" id="lesson" required></label><br>
+    <input type="file" name="video" accept=".mp4" required>
+    <button type="submit">Upload</button>
+  </form>
+  <div class="progress" id="progress"></div>
+
+  <div class="video-container">
+    <h2>Video Player</h2>
+    <video id="videoPlayer" class="video-js vjs-default-skin" controls width="640" height="360"></video>
+  </div>
+
+  <button type="button" id="listVideosBtn">Show Videos</button>
+  <ul id="videoList"></ul>
+
+  <script src="/js/video.min.js"></script>
+  <script>
+    const form = document.getElementById('uploadForm');
+    const progress = document.getElementById('progress');
+    const player = videojs('videoPlayer');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      progress.textContent = '';
+      const formData = new FormData(form);
+      const course = document.getElementById('course').value;
+      const lesson = document.getElementById('lesson').value;
+      const xhr = new XMLHttpRequest();
+
+      xhr.upload.addEventListener('progress', (event) => {
+        if (event.lengthComputable) {
+          const percentComplete = (event.loaded / event.total) * 100;
+          progress.textContent = `Upload Progress: ${percentComplete.toFixed(2)}%`;
+        }
+      });
+
+      xhr.addEventListener('load', async () => {
+        if (xhr.status === 200) {
+          progress.textContent = 'Upload complete!';
+          const response = JSON.parse(xhr.responseText);
+          await fetchTokenAndPlay(response.course, response.lesson, response.playlist);
+        } else {
+          try {
+            const error = JSON.parse(xhr.responseText);
+            progress.textContent = error.error || 'Upload failed.';
+          } catch {
+            progress.textContent = 'Upload failed.';
+          }
+        }
+      });
+
+      xhr.addEventListener('error', () => {
+        progress.textContent = 'Network error during upload.';
+      });
+
+      xhr.open('POST', '/upload', true);
+      xhr.send(formData);
+    });
+
+    async function fetchTokenAndPlay(course, lesson, playlist) {
+      const response = await fetch('/token');
+      const data = await response.json();
+      const token = data.token;
+      const videoUrl = `/stream/${encodeURIComponent(course)}/${encodeURIComponent(lesson)}/${encodeURIComponent(playlist)}?token=${token}`;
+      player.src({ src: videoUrl, type: 'application/x-mpegURL' });
+      player.play();
+      // Listen for playback errors (e.g., token expired)
+      player.on('error', function() {
+        progress.textContent = 'Playback error. The token may have expired or the video is unavailable.';
+      });
+    }
+
+    document.getElementById('listVideosBtn').addEventListener('click', async () => {
+      const course = document.getElementById('course').value;
+      const lesson = document.getElementById('lesson').value;
+      if (!course || !lesson) {
+        progress.textContent = 'Please enter course and lesson.';
+        return;
+      }
+      const res = await fetch(`/videos/${encodeURIComponent(course)}/${encodeURIComponent(lesson)}`);
+      const files = await res.json();
+      const videoList = document.getElementById('videoList');
+      videoList.innerHTML = '';
+      if (files.length === 0) {
+        videoList.innerHTML = '<li>No videos found.</li>';
+        return;
+      }
+      files.forEach(file => {
+        const li = document.createElement('li');
+        const btn = document.createElement('button');
+        btn.textContent = `Play ${file}`;
+        btn.onclick = async () => {
+          await fetchTokenAndPlay(course, lesson, file);
+        };
+        li.appendChild(btn);
+        videoList.appendChild(li);
+      });
+    });
+  </script>
+</body>
+</html> 
