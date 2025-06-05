@@ -1,59 +1,76 @@
-# Secure HLS Video Upload & Streaming App
+# LMS Video Processing System
 
-This is a full-stack Node.js application that allows users to upload MP4 videos, convert them to HLS format, and stream them securely using token-based authentication.
+A secure video processing system for Learning Management Systems that handles video uploads, converts them to HLS format, and serves them securely.
+
+## Features
+
+- Secure video upload system
+- FFmpeg-based video conversion to HLS format
+- Secure video streaming with expiring URLs
+- Video.js player integration
+- PostgreSQL database for metadata storage
+- Docker-based deployment
 
 ## Prerequisites
 
-- Node.js (v14 or higher)
-- FFmpeg installed on your system
+- Ubuntu 20.04 or later
+- Node.js 18 or later
+- FFmpeg
+- PM2 (for process management)
 
-## Installation
+## Deployment Instructions
 
 1. Clone the repository:
-   ```bash
-   git clone <repository-url>
-   cd <repository-directory>
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Create a `.env` file in the root directory with the following variables:
-   ```
-   PORT=3000
-   JWT_SECRET=your_jwt_secret
-   ```
-
-## Running the App
-
-### Development Mode
 ```bash
-npm run dev
+git clone https://github.com/rahulsinghnegiii/lms-vps.git
+cd lms-vps
 ```
 
-### Production Mode
+2. Make the deployment script executable:
 ```bash
-npm start
+chmod +x deploy.sh
 ```
 
-The server will start on the specified port (default: 3000).
+3. Run the deployment script:
+```bash
+./deploy.sh
+```
 
-## Testing
+4. Configure your environment variables in `.env`:
+```
+PORT=3000
+JWT_SECRET=your_secure_jwt_secret
+```
 
-1. Open your browser and navigate to `http://localhost:3000`.
-2. Use the upload form to select and upload an MP4 file (max 1GB).
-3. Monitor the upload progress and status messages.
-4. After successful upload, the video will be processed and converted to HLS format.
-5. Use the Video.js player to stream the converted video securely.
+5. The application will be running on port 3000 by default.
 
-## Security
+## Directory Structure
 
-- The app uses token-based authentication for secure streaming.
-- Tokens expire after 5 minutes.
-- Direct access to `.m3u8` and `.ts` files is prevented without a valid token.
+```
+lms-vps/
+├── uploads/          # Temporary video upload storage
+├── videos/          # Processed HLS video files
+├── public/          # Static files (Video.js, CSS)
+├── index.js         # Main application file
+├── deploy.sh        # Deployment script
+└── package.json     # Project dependencies
+```
+
+## Security Considerations
+
+1. Make sure to set a strong JWT_SECRET in your .env file
+2. Configure your firewall to only allow necessary ports
+3. Use HTTPS in production
+4. Regularly update system packages
+
+## Monitoring
+
+The application is managed by PM2. You can use the following commands:
+
+- View logs: `pm2 logs lms-vps`
+- Monitor status: `pm2 status`
+- Restart application: `pm2 restart lms-vps`
 
 ## License
 
-This project is licensed under the MIT License. 
+[Your License] 
